@@ -9,7 +9,9 @@
     "./item": "./src/item/index.ts",
     "./win32": "./src/win32.ts",
     "./clipboard": "./src/clipboard.ts",
-    "./log": "./src/log.ts"
+    "./log": "./src/log.ts",
+    "./trade": "./src/trade/index.ts",
+    "./ninja": "./src/ninja.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
