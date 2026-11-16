@@ -1,0 +1,33 @@
+{
+  "name": "@poe2/core",
+  "version": "0.1.0",
+  "description": "Shared building blocks for the PoE2 tools: item text parsing, hotkeys, the one-keystroke item copy, Win32 helpers and logging",
+  "private": true,
+  "type": "commonjs",
+  "exports": {
+    "./hotkey": "./src/hotkey.ts",
+    "./item": "./src/item/index.ts",
+    "./win32": "./src/win32.ts",
+    "./clipboard": "./src/clipboard.ts",
+    "./log": "./src/log.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "electron": ">=45",
+    "koffi": "^3.3.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "electron": "^45.3.1",
+    "koffi": "^3.3.8",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "allowScripts": {
+    "electron": false,
+    "koffi": false
+  }
+}
