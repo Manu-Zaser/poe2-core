@@ -66,6 +66,16 @@ export function parseModHeader(line: string): Omit<ModMeta, 'line'> {
  * Parst den Text, den PoE2 bei Strg+C (oder Strg+Alt+C) in die Zwischenablage legt.
  * Gibt null zurück, wenn der Text nicht wie ein Item aussieht.
  */
+/**
+ * Normale und magische Items tragen Vorsilben, die nicht zum Basistyp gehören: "Superior" (Qualität) und
+ * "Exceptional" (z. B. "Exceptional Shrine Sceptre" – die Trade-Seite kennt nur "Shrine Sceptre").
+ * Währung wie "Exceptional Verisium" hat eine andere Seltenheit und bleibt unverändert.
+ */
+function stripQualityPrefix(name: string, rarity: Rarity): string {
+  if (rarity !== 'Normal' && rarity !== 'Magic') return name;
+  return name.replace(/^(?:Superior|Exceptional)\s+/, '');
+}
+
 export function parseItemText(text: string): ParsedItem | null {
   const lines = text
     .replace(/\r\n?/g, '\n')
@@ -118,7 +128,7 @@ export function parseItemText(text: string): ParsedItem | null {
     itemClass,
     rarity,
     name: hasOwnName ? names[0] : undefined,
-    baseType: hasOwnName ? names[1] : names[0],
+    baseType: hasOwnName ? names[1] : stripQualityPrefix(names[0], rarity),
     corrupted: find(PATTERNS.corrupted) !== null,
     unidentified,
     sections,

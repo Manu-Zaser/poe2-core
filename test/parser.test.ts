@@ -8,6 +8,14 @@ import { parseItemText } from '../src/item';
 const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
 
 describe('parseItemText', () => {
+  it('nimmt "Exceptional" und "Superior" nicht in den Basistyp normaler Items', () => {
+    const text = (name: string, rarity = 'Normal', cls = 'Sceptres') => [`Item Class: ${cls}`, `Rarity: ${rarity}`, name, '--------', 'Item Level: 81'].join(String.fromCharCode(10));
+    expect(parseItemText(text('Exceptional Shrine Sceptre'))!.baseType).toBe('Shrine Sceptre');
+    expect(parseItemText(text('Superior Shrine Sceptre'))!.baseType).toBe('Shrine Sceptre');
+    // Echte Währung mit dem Wort im Namen bleibt unverändert.
+    expect(parseItemText(text('Exceptional Verisium', 'Currency', 'Stackable Currency'))!.baseType).toBe('Exceptional Verisium');
+  });
+
   it('erkennt Währung mit Stapelgröße', () => {
     const item = parseItemText(fixture('currency-divine.txt'))!;
     expect(item.rarity).toBe('Currency');
