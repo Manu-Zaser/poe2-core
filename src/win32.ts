@@ -54,6 +54,17 @@ export function sendCopy(): void {
   if (!ctrlHeld) key(VK_CONTROL, true);
 }
 
+const VK_LBUTTON = 0x01;
+const VK_RBUTTON = 0x02;
+
+/**
+ * Ist gerade eine Maustaste (links/rechts) gedrückt? Liest nur den Zustand bei Windows – sendet nichts.
+ * Hinweis: Bei aktivem Spiel meldet Windows das nicht immer zuverlässig; nur für "nice to have" nutzen.
+ */
+export function mouseButtonDown(): boolean {
+  return isDown(VK_LBUTTON) || isDown(VK_RBUTTON);
+}
+
 /** Handle des aktuellen Vordergrundfensters als Zahl (0 = keins) – zum Vergleich mit eigenen Fenstern. */
 export function foregroundWindowHandle(): bigint {
   const hwnd = GetForegroundWindow();
