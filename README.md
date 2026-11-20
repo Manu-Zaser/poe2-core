@@ -18,6 +18,7 @@ Each module is imported on its own, so browser code never pulls in Windows or El
 | `@poe2/core/win32` | Win32 via koffi: send the copy keystroke, foreground window title/handle, bring a window to the front | Electron main |
 | `@poe2/core/trade` | Trade site client (`/api/trade2` search and fetch) with a rate limiter that follows the limits GGG reports; anonymous, no login | anywhere with `fetch` |
 | `@poe2/core/ninja` | poe.ninja exchange rates (Divine ↔ Exalted and other currency) and the current leagues | anywhere with `fetch` |
+| `@poe2/core/prices` | poe.ninja price index: every exchange item (currency, runes, omens …) and unique of a league with icon and 7-day trend, plus a check of all trade pairs – if they disagree by more than 3×, the lower price is used with a warning | anywhere with `fetch` |
 | `@poe2/core/log` | `createLogger({ fileName })`: log file in the app's user data folder with size rotation, console in development | Electron main |
 
 ## GGG rules

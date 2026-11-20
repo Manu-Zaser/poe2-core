@@ -1,7 +1,7 @@
 {
   "name": "@poe2/core",
   "version": "0.1.0",
-  "description": "Shared building blocks for the PoE2 tools: item text parsing, hotkeys, the one-keystroke item copy, Win32 helpers and logging",
+  "description": "Shared building blocks for the PoE2 tools: item text parsing, hotkeys, the one-keystroke item copy, Win32 helpers, logging, trade search and poe.ninja prices",
   "private": true,
   "type": "commonjs",
   "exports": {
@@ -11,7 +11,8 @@
     "./clipboard": "./src/clipboard.ts",
     "./log": "./src/log.ts",
     "./trade": "./src/trade/index.ts",
-    "./ninja": "./src/ninja.ts"
+    "./ninja": "./src/ninja.ts",
+    "./prices": "./src/prices.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
