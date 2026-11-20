@@ -22,6 +22,8 @@ export interface PriceMatch {
   ninjaRef?: { type: string; id: string };
   /** Hinweis, wenn der Preis unsicher ist (z. B. Handelspaare widersprechen sich). */
   warning?: string;
+  /** Preis wurde wegen widersprüchlicher Handelspaare auf den niedrigeren gesetzt (sonst nur Hinweis). */
+  priceAdjusted?: boolean;
   /** Börsen-Items: gehandeltes Volumen laut poe.ninja, umgerechnet in Divine (wenig = unsicherer Preis). */
   volumeDivine?: number;
   /** Börsen-Items: Währung des Paares mit dem meisten Volumen, aus dem poe.ninja den Preis nimmt. */
@@ -215,6 +217,8 @@ export interface PairQuote {
   rate: number;
   /** Umgerechnet in Divine. */
   divine: number;
+  /** Gehandeltes Volumen dieses Paares in Divine (fehlt bei älteren Antworten). */
+  volumeDivine?: number;
 }
 
 interface DetailsResponse {
@@ -234,31 +238,55 @@ export async function fetchPairs(fetchJson: FetchJson, league: string, ref: { ty
     if (!(p.rate > 0)) continue;
     const perDivine = p.id === 'divine' ? 1 : rates[p.id];
     if (!(perDivine > 0)) continue;
-    out.push({ currency: p.id, rate: p.rate, divine: p.rate / perDivine });
+    const vol = typeof p.volumePrimaryValue === 'number' && Number.isFinite(p.volumePrimaryValue) ? { volumeDivine: p.volumePrimaryValue } : {};
+    out.push({ currency: p.id, rate: p.rate, divine: p.rate / perDivine, ...vol });
   }
   return out;
 }
 
 /** Ab diesem Faktor zwischen günstigstem und teuerstem Paar gilt der Preis als widersprüchlich. */
 export const PAIR_SPREAD = 3;
+/**
+ * Paare mit weniger als diesem Anteil am Volumen des stärksten Paares zählen nicht: ein paar Tausche oder
+ * einzelne Kaufgesuche (z. B. Omen of Whittling: 14.9 Div bei 9220 Div Volumen, aber "1751 Exalted" bei 0.5 Div).
+ */
+export const PAIR_MIN_SHARE = 0.1;
+/** Weniger gehandelte Stück (Volumen ÷ Preis) über alle Paare = Preis unsicher. */
+export const PAIR_MIN_UNITS = 3;
 
 const CURRENCY_NAME: Record<string, string> = { divine: 'Divine', exalted: 'Exalted', chaos: 'Chaos' };
 const amountText = (q: PairQuote) => `${Number(q.rate.toPrecision(3))} ${CURRENCY_NAME[q.currency] ?? q.currency}`;
 
 /**
- * Widersprechen sich die Paare (Faktor > PAIR_SPREAD), gilt vorsichtshalber der niedrigste Kurs, mit Hinweis.
+ * Preis gegen alle Handelspaare prüfen, gewichtet nach Volumen:
+ * - Paare mit kaum Volumen zählen nicht.
+ * - Widersprechen sich die übrigen (Faktor > PAIR_SPREAD), gilt vorsichtshalber der niedrigste, mit Hinweis.
+ * - Wird insgesamt kaum gehandelt, bleibt der Preis, aber mit Hinweis.
  * Sonst bleibt der poe.ninja-Preis unverändert.
  */
 export function checkPairs(match: PriceMatch, quotes: PairQuote[], exaltedPerDivine: number): PriceMatch {
-  if (quotes.length < 2) return match;
-  const sorted = [...quotes].sort((a, b) => a.divine - b.divine);
-  const low = sorted[0];
-  const high = sorted[sorted.length - 1];
-  if (high.divine / low.divine <= PAIR_SPREAD) return match;
-  return {
-    ...match,
-    divine: low.divine,
-    exalted: low.divine * exaltedPerDivine,
-    warning: `poe.ninja's trades disagree: ${amountText(low)} vs ${amountText(high)} – few trades, check the in-game exchange. Showing the lower price.`,
-  };
+  const known = quotes.filter((q) => q.volumeDivine !== undefined);
+  const maxVolume = Math.max(0, ...known.map((q) => q.volumeDivine!));
+  const relevant = known.length === quotes.length && maxVolume > 0 ? quotes.filter((q) => q.volumeDivine! >= PAIR_MIN_SHARE * maxVolume) : quotes;
+  if (relevant.length >= 2) {
+    const sorted = [...relevant].sort((a, b) => a.divine - b.divine);
+    const low = sorted[0];
+    const high = sorted[sorted.length - 1];
+    if (high.divine / low.divine > PAIR_SPREAD) {
+      return {
+        ...match,
+        divine: low.divine,
+        exalted: low.divine * exaltedPerDivine,
+        priceAdjusted: true,
+        warning: `poe.ninja's trades disagree: ${amountText(low)} vs ${amountText(high)} – few trades, check the in-game exchange. Showing the lower price.`,
+      };
+    }
+  }
+  const total = known.reduce((sum, q) => sum + q.volumeDivine!, 0);
+  if (known.length && match.divine > 0 && total / match.divine < PAIR_MIN_UNITS) {
+    const units = total / match.divine;
+    const how = units < 1 ? 'Hardly traded' : `Only ≈ ${Number(units.toFixed(1))} traded`;
+    return { ...match, warning: `${how} on poe.ninja – the price may be off, check the in-game exchange.` };
+  }
+  return match;
 }
