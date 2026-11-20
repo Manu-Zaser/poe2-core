@@ -22,6 +22,10 @@ export interface PriceMatch {
   ninjaRef?: { type: string; id: string };
   /** Hinweis, wenn der Preis unsicher ist (z. B. Handelspaare widersprechen sich). */
   warning?: string;
+  /** Börsen-Items: gehandeltes Volumen laut poe.ninja, umgerechnet in Divine (wenig = unsicherer Preis). */
+  volumeDivine?: number;
+  /** Börsen-Items: Währung des Paares mit dem meisten Volumen, aus dem poe.ninja den Preis nimmt. */
+  pricedIn?: string;
 }
 
 /** Ein Eintrag des Index mit seiner poe.ninja-Kategorie (z. B. "Runes", "UniqueArmours"). */
@@ -50,7 +54,7 @@ export const UNIQUE_TYPES = [
 interface Sparkline { totalChange?: number; data?: (number | null)[] }
 interface ExchangeResponse {
   core: { rates: { exalted?: number }; primary: string };
-  lines: { id: string; primaryValue: number; sparkline?: Sparkline }[];
+  lines: { id: string; primaryValue: number; volumePrimaryValue?: number; maxVolumeCurrency?: string; sparkline?: Sparkline }[];
   items: { id: string; name: string; image?: string }[];
 }
 interface UniqueResponse {
@@ -171,6 +175,8 @@ export async function buildPriceIndex(fetchJson: FetchJson, league: string): Pro
         exalted: line.primaryValue * (rate || index.exaltedPerDivine),
         change7d: line.sparkline?.totalChange,
         sparkline: cleanSparkline(line.sparkline?.data),
+        ...(typeof line.volumePrimaryValue === 'number' && Number.isFinite(line.volumePrimaryValue) ? { volumeDivine: line.volumePrimaryValue } : {}),
+        ...(line.maxVolumeCurrency ? { pricedIn: line.maxVolumeCurrency } : {}),
       };
       index.currency.set(name.toLowerCase(), match);
       index.entries.push({ match, type });
